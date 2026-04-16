@@ -146,34 +146,29 @@ async function processStormAlerts(storm) {
   const results = [];
 
   for (const m of matches) {
-    // Skip if auto-alert already sent (enforced by partial unique index too)
-    const { rows: existing } = await pool.query(
-      `SELECT id FROM alerts_sent
-       WHERE user_id = $1 AND storm_event_id = $2 AND channel = 'email' AND triggered_by = 'auto' AND status = 'sent'`,
-      [m.id, storm.id]
+    const preview = `${storm.severity} ${storm.event_type} near ${storm.location_name || storm.state}`;
+
+    // Atomically claim the slot — if another process beat us, skip
+    const { rows: claimed } = await pool.query(
+      `INSERT INTO alerts_sent (user_id, storm_event_id, channel, status, message_preview, triggered_by)
+       VALUES ($1, $2, 'email', 'pending', $3, 'auto')
+       ON CONFLICT DO NOTHING RETURNING id`,
+      [m.id, storm.id, preview]
     );
-    if (existing.length) continue;
+    if (!claimed.length) continue;
 
     let status = 'sent';
-    let preview = `${storm.severity} ${storm.event_type} near ${storm.location_name || storm.state}`;
     try {
       await sendEmailAlert(m.email, storm, m.zone_name);
     } catch (err) {
       console.error(`[Alert] Email failed → ${m.email}:`, err.message);
-      status  = 'failed';
-      preview = err.message.slice(0, 200);
+      status = 'failed';
     }
 
-    try {
-      await pool.query(
-        `INSERT INTO alerts_sent (user_id, storm_event_id, channel, status, message_preview, triggered_by)
-         VALUES ($1, $2, 'email', $3, $4, 'auto')
-         ON CONFLICT DO NOTHING`,
-        [m.id, storm.id, status, preview]
-      );
-    } catch (dbErr) {
-      console.error('[Alert] Failed to log alert:', dbErr.message);
-    }
+    await pool.query(
+      `UPDATE alerts_sent SET status = $1 WHERE user_id = $2 AND storm_event_id = $3 AND channel = 'email' AND triggered_by = 'auto'`,
+      [status, m.id, storm.id]
+    );
 
     results.push({ userId: m.id, email: m.email, status });
   }
@@ -233,14 +228,18 @@ async function processNewZoneAlerts(zone) {
 
   const results = [];
   for (const storm of matching) {
-    const { rows: existing } = await pool.query(
-      `SELECT id FROM alerts_sent WHERE user_id = $1 AND storm_event_id = $2 AND channel = 'email' AND status = 'sent'`,
-      [user.id, storm.id]
+    const preview = `${storm.severity} ${storm.event_type} near ${storm.location_name || storm.state}`;
+
+    // Atomically claim the slot — if another process beat us, skip
+    const { rows: claimed } = await pool.query(
+      `INSERT INTO alerts_sent (user_id, storm_event_id, channel, status, message_preview, triggered_by)
+       VALUES ($1, $2, 'email', 'pending', $3, 'auto')
+       ON CONFLICT DO NOTHING RETURNING id`,
+      [user.id, storm.id, preview]
     );
-    if (existing.length) continue;
+    if (!claimed.length) continue;
 
     let status = 'sent';
-    const preview = `${storm.severity} ${storm.event_type} near ${storm.location_name || storm.state}`;
     try {
       await sendEmailAlert(user.email, storm, zone.name);
     } catch (err) {
@@ -249,9 +248,8 @@ async function processNewZoneAlerts(zone) {
     }
 
     await pool.query(
-      `INSERT INTO alerts_sent (user_id, storm_event_id, channel, status, message_preview, triggered_by)
-       VALUES ($1, $2, 'email', $3, $4, 'auto') ON CONFLICT DO NOTHING`,
-      [user.id, storm.id, status, preview]
+      `UPDATE alerts_sent SET status = $1 WHERE user_id = $2 AND storm_event_id = $3 AND channel = 'email' AND triggered_by = 'auto'`,
+      [status, user.id, storm.id]
     );
     results.push({ stormId: storm.id, status });
   }
