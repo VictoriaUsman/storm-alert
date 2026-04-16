@@ -1,23 +1,16 @@
-const nodemailer = require('nodemailer');
+const { google } = require('googleapis');
 const pool = require('../db');
 
-// ─── Mailer ───────────────────────────────────────────────────────────────────
+// ─── Mailer (Gmail REST API — works on Railway, no SMTP ports needed) ─────────
 
-let _transporter = null;
-
-function getTransporter() {
-  if (_transporter) return _transporter;
-  _transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      type:         'OAuth2',
-      user:         process.env.GMAIL_USER,
-      clientId:     process.env.GMAIL_CLIENT_ID,
-      clientSecret: process.env.GMAIL_CLIENT_SECRET,
-      refreshToken: process.env.GMAIL_REFRESH_TOKEN,
-    },
-  });
-  return _transporter;
+function getGmailClient() {
+  const auth = new google.auth.OAuth2(
+    process.env.GMAIL_CLIENT_ID,
+    process.env.GMAIL_CLIENT_SECRET,
+    'https://developers.google.com/oauthplayground'
+  );
+  auth.setCredentials({ refresh_token: process.env.GMAIL_REFRESH_TOKEN });
+  return google.gmail({ version: 'v1', auth });
 }
 
 // ─── Geography ────────────────────────────────────────────────────────────────
@@ -130,12 +123,21 @@ async function sendEmailAlert(userEmail, storm, zoneName) {
   const html    = buildEmailHtml({ email: userEmail }, storm, zoneName);
   const loc     = [storm.location_name, storm.state].filter(Boolean).join(', ');
   const subject = `Storm Alert: ${storm.severity.toUpperCase()} ${storm.event_type} near ${loc || 'your area'}`;
+  const from    = process.env.EMAIL_FROM || process.env.GMAIL_USER;
 
-  await getTransporter().sendMail({
-    from:    process.env.EMAIL_FROM || process.env.GMAIL_USER,
-    to:      userEmail,
-    subject,
+  const raw = [
+    `From: ${from}`,
+    `To: ${userEmail}`,
+    `Subject: ${subject}`,
+    'MIME-Version: 1.0',
+    'Content-Type: text/html; charset=utf-8',
+    '',
     html,
+  ].join('\r\n');
+
+  await getGmailClient().users.messages.send({
+    userId: 'me',
+    requestBody: { raw: Buffer.from(raw).toString('base64url') },
   });
 }
 
