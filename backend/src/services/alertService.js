@@ -148,11 +148,14 @@ async function processStormAlerts(storm) {
   for (const m of matches) {
     const preview = `${storm.severity} ${storm.event_type} near ${storm.location_name || storm.state}`;
 
-    // Atomically claim the slot — if another process beat us, skip
+    // Claim the slot — retry if previously failed, skip if already sent
     const { rows: claimed } = await pool.query(
       `INSERT INTO alerts_sent (user_id, storm_event_id, channel, status, message_preview, triggered_by)
        VALUES ($1, $2, 'email', 'pending', $3, 'auto')
-       ON CONFLICT DO NOTHING RETURNING id`,
+       ON CONFLICT (user_id, storm_event_id, channel) WHERE triggered_by = 'auto'
+       DO UPDATE SET status = 'pending', sent_at = NOW()
+       WHERE alerts_sent.status = 'failed'
+       RETURNING id`,
       [m.id, storm.id, preview]
     );
     if (!claimed.length) continue;
@@ -233,11 +236,14 @@ async function processNewZoneAlerts(zone) {
   for (const storm of matching) {
     const preview = `${storm.severity} ${storm.event_type} near ${storm.location_name || storm.state}`;
 
-    // Atomically claim the slot — if another process beat us, skip
+    // Claim the slot — retry if previously failed, skip if already sent
     const { rows: claimed } = await pool.query(
       `INSERT INTO alerts_sent (user_id, storm_event_id, channel, status, message_preview, triggered_by)
        VALUES ($1, $2, 'email', 'pending', $3, 'auto')
-       ON CONFLICT DO NOTHING RETURNING id`,
+       ON CONFLICT (user_id, storm_event_id, channel) WHERE triggered_by = 'auto'
+       DO UPDATE SET status = 'pending', sent_at = NOW()
+       WHERE alerts_sent.status = 'failed'
+       RETURNING id`,
       [user.id, storm.id, preview]
     );
     if (!claimed.length) continue;
