@@ -6,7 +6,8 @@ const authRoutes     = require('./routes/auth');
 const coverageRoutes = require('./routes/coverage');
 const stormRoutes    = require('./routes/storms');
 const adminRoutes    = require('./routes/admin');
-const { startStormChecker } = require('./jobs/stormChecker');
+const { startStormChecker }   = require('./jobs/stormChecker');
+const { startForecastChecker } = require('./jobs/forecastChecker');
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
@@ -32,4 +33,5 @@ app.use((err, _req, res, _next) => {
 app.listen(PORT, () => {
   console.log(`Storm Alert API → http://localhost:${PORT}`);
   startStormChecker();
+  startForecastChecker();
 });

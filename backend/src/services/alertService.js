@@ -50,8 +50,8 @@ function buildEmailHtml(user, storm, zoneName) {
 <body style="margin:0;padding:0;font-family:Arial,sans-serif;background:#f4f4f4">
 <table width="100%" cellpadding="0" cellspacing="0" style="max-width:600px;margin:30px auto">
   <tr><td style="background:#16213e;padding:24px 28px;border-radius:8px 8px 0 0">
-    <h1 style="margin:0;color:#fff;font-size:22px">&#9889; Storm Alert</h1>
-    <p style="margin:6px 0 0;color:#aac4e8;font-size:14px">A storm has entered your coverage area</p>
+    <h1 style="margin:0;color:#fff;font-size:22px">${storm.source === 'TOMORROW_IO' ? '&#x1F4E1; Storm Forecast' : '&#9889; Storm Alert'}</h1>
+    <p style="margin:6px 0 0;color:#aac4e8;font-size:14px">${storm.source === 'TOMORROW_IO' ? 'A storm is forecast to enter your coverage area' : 'A storm has entered your coverage area'}</p>
   </td></tr>
 
   <tr><td style="background:#fff;padding:28px;border:1px solid #e0e0e0">
