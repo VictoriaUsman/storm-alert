@@ -223,6 +223,20 @@ export default function Admin() {
   const [tab,         setTab]         = useState('clients');
   const [checkStatus, setCheckStatus] = useState('');
   const [checking,    setChecking]    = useState(false);
+  const [forecasting, setForecasting] = useState(false);
+
+  const runForecast = async () => {
+    setForecasting(true);
+    try {
+      await api.post('/admin/run-forecast');
+      setCheckStatus('✓ Forecast check complete — check Alert Log for results');
+    } catch (err) {
+      setCheckStatus('✗ ' + (err.response?.data?.error || 'Forecast check failed'));
+    } finally {
+      setForecasting(false);
+      setTimeout(() => setCheckStatus(''), 5000);
+    }
+  };
 
   const runCheck = async () => {
     setChecking(true);
@@ -241,10 +255,17 @@ export default function Admin() {
     <div className="page">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 24 }}>
         <h2 style={{ margin: 0, fontSize: 22 }}>Admin Dashboard</h2>
-        <div style={{ textAlign: 'right' }}>
-          <button className="btn btn-success" onClick={runCheck} disabled={checking}>
-            {checking ? '⟳ Checking…' : '⟳ Run Storm Check'}
-          </button>
+        <div style={{ textAlign: 'right', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+          <div>
+            <button className="btn btn-success" onClick={runCheck} disabled={checking}>
+              {checking ? '⟳ Checking…' : '⟳ Run Storm Check'}
+            </button>
+          </div>
+          <div>
+            <button className="btn btn-primary" onClick={runForecast} disabled={forecasting}>
+              {forecasting ? '⟳ Checking…' : '📡 Run Forecast Check'}
+            </button>
+          </div>
           {checkStatus && (
             <div style={{
               marginTop: 8, fontSize: 13,

@@ -3,6 +3,7 @@ const pool    = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const { sendManualAlert, processStormAlerts } = require('../services/alertService');
 const { fetchRecentStorms } = require('../services/noaaService');
+const { runForecastCheck } = require('../jobs/forecastChecker');
 
 const router = express.Router();
 router.use(authenticate, requireAdmin);
@@ -103,6 +104,18 @@ router.post('/run-check', async (req, res) => {
   } catch (err) {
     console.error('[Admin] run-check error:', err.message);
     res.status(500).json({ error: err.message || 'Storm check failed' });
+  }
+});
+
+// POST /api/admin/run-forecast
+router.post('/run-forecast', async (req, res) => {
+  if (!process.env.TOMORROW_API_KEY)
+    return res.status(400).json({ error: 'TOMORROW_API_KEY is not configured' });
+  try {
+    await runForecastCheck();
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
