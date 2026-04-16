@@ -39,6 +39,44 @@ function classifyIce(inches) {
 // Tomorrow.io weather codes for thunderstorms
 const THUNDERSTORM_CODES = new Set([8000, 8001, 8003]);
 
+// ─── Weather code labels ──────────────────────────────────────────────────────
+
+const WEATHER_LABELS = {
+  1000: 'Clear', 1100: 'Mostly Clear', 1101: 'Partly Cloudy', 1102: 'Mostly Cloudy',
+  1001: 'Cloudy', 2000: 'Fog', 2100: 'Light Fog',
+  4000: 'Drizzle', 4001: 'Rain', 4200: 'Light Rain', 4201: 'Heavy Rain',
+  5000: 'Snow', 5001: 'Flurries', 5100: 'Light Snow', 5101: 'Heavy Snow',
+  6000: 'Freezing Drizzle', 6001: 'Freezing Rain',
+  6200: 'Light Freezing Rain', 6201: 'Heavy Freezing Rain',
+  7000: 'Ice Pellets', 7101: 'Heavy Ice Pellets', 7102: 'Light Ice Pellets',
+  8000: 'Thunderstorm', 8001: 'Heavy Thunderstorm', 8003: 'Thunderstorm with Hail',
+};
+
+// ─── Current conditions ───────────────────────────────────────────────────────
+
+async function getCurrentConditions(lat, lng) {
+  const res = await axios.get(`${BASE}/weather/realtime`, {
+    params: {
+      location: `${lat},${lng}`,
+      fields:   'temperature,humidity,windSpeed,windGust,precipitationIntensity,weatherCode,hailProbability',
+      units:    'imperial',
+      apikey:   process.env.TOMORROW_API_KEY,
+    },
+    timeout: 10000,
+  });
+
+  const v = res.data?.data?.values || {};
+  return {
+    weather:       WEATHER_LABELS[v.weatherCode] || 'Unknown',
+    temperature:   v.temperature   != null ? `${v.temperature.toFixed(0)}°F`  : null,
+    humidity:      v.humidity      != null ? `${v.humidity.toFixed(0)}%`       : null,
+    windSpeed:     v.windSpeed     != null ? `${v.windSpeed.toFixed(0)} mph`   : null,
+    windGust:      v.windGust      != null ? `${v.windGust.toFixed(0)} mph`    : null,
+    precipitation: v.precipitationIntensity > 0 ? `${v.precipitationIntensity.toFixed(2)} mm/hr` : 'None',
+    hailProbability: v.hailProbability > 0 ? `${v.hailProbability.toFixed(0)}%` : null,
+  };
+}
+
 // ─── Main forecast function ───────────────────────────────────────────────────
 
 async function checkForecast(lat, lng) {
@@ -167,4 +205,4 @@ async function checkForecast(lat, lng) {
   return Object.values(worst);
 }
 
-module.exports = { checkForecast };
+module.exports = { checkForecast, getCurrentConditions };

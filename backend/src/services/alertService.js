@@ -91,7 +91,7 @@ function buildEmailHtml(user, storm, zoneName) {
 }
 
 // Combined zone report email — sent once when a new coverage zone is created
-function buildZoneReportEmailHtml(userEmail, zoneName, recentStorm, forecasts) {
+function buildZoneReportEmailHtml(userEmail, zoneName, recentStorm, forecasts, currentConditions) {
   const mapUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/dashboard`;
 
   const stormSection = recentStorm ? (() => {
@@ -118,7 +118,47 @@ function buildZoneReportEmailHtml(userEmail, zoneName, recentStorm, forecasts) {
     </div>`;
   })() : '';
 
-  const forecastSection = forecasts?.length ? (() => {
+  const conditionsSection = currentConditions ? (() => {
+    const rows = [
+      ['Weather',     currentConditions.weather],
+      ['Temperature', currentConditions.temperature],
+      ['Humidity',    currentConditions.humidity],
+      ['Wind Speed',  currentConditions.windSpeed],
+      ['Wind Gust',   currentConditions.windGust],
+      ['Precip.',     currentConditions.precipitation],
+      currentConditions.hailProbability ? ['Hail Prob.', currentConditions.hailProbability] : null,
+    ].filter(Boolean);
+
+    const rowsHtml = rows.map(([label, value]) => `
+      <tr style="border-bottom:1px solid #f0f0f0">
+        <td style="color:#888;font-size:13px;padding:7px 0;width:110px">${label}</td>
+        <td style="font-weight:600;font-size:13px;padding:7px 0">${value}</td>
+      </tr>`).join('');
+
+    return `
+    <div style="margin-bottom:24px">
+      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:10px">
+        &#x1F324; Current Conditions
+      </div>
+      <div style="border:1px solid #e8e8e8;border-radius:4px;padding:4px 16px">
+        <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">
+          ${rowsHtml}
+        </table>
+      </div>
+    </div>`;
+  })() : '';
+
+  const forecastSection = (() => {
+    const header = `<div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:10px">&#x1F4E1; Severe Weather Forecast (Next 24h)</div>`;
+    if (!forecasts?.length) {
+      return `
+      <div style="margin-bottom:24px">
+        ${header}
+        <div style="border:1px solid #e8e8e8;border-radius:4px;padding:14px 16px;color:#888;font-size:13px">
+          &#x2705; No severe weather forecast — conditions look clear for the next 24 hours.
+        </div>
+      </div>`;
+    }
     const items = forecasts.map(f => {
       const color = SEVERITY_COLOR[f.severity] || SEVERITY_COLOR.moderate;
       return `
@@ -130,12 +170,10 @@ function buildZoneReportEmailHtml(userEmail, zoneName, recentStorm, forecasts) {
     }).join('');
     return `
     <div style="margin-bottom:24px">
-      <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:#555;margin-bottom:10px">
-        &#x1F4E1; Upcoming Forecast (Next 24 Hours)
-      </div>
+      ${header}
       ${items}
     </div>`;
-  })() : '';
+  })();
 
   const noActivitySection = (!recentStorm && !forecasts?.length) ? `
     <div style="text-align:center;padding:24px;background:#f8f9fb;border-radius:6px;color:#888;font-size:14px;margin-bottom:24px">
@@ -153,6 +191,7 @@ function buildZoneReportEmailHtml(userEmail, zoneName, recentStorm, forecasts) {
   </td></tr>
   <tr><td style="background:#fff;padding:28px;border:1px solid #e0e0e0">
     ${stormSection}
+    ${conditionsSection}
     ${forecastSection}
     ${noActivitySection}
     <div style="text-align:center;margin-top:8px">
@@ -302,22 +341,23 @@ async function processNewZoneAlerts(zone) {
     ) <= parseFloat(zone.radius_miles)
   ) || null;
 
-  // ── 2. Tomorrow.io forecast (if configured) ───────────────────────────────
-  let forecasts = [];
+  // ── 2. Tomorrow.io current conditions + forecast (if configured) ──────────
+  let forecasts          = [];
+  let currentConditions  = null;
   if (process.env.TOMORROW_API_KEY) {
     try {
-      const { checkForecast } = require('./tomorrowService');
-      forecasts = await checkForecast(
-        parseFloat(zone.center_lat),
-        parseFloat(zone.center_lng)
-      );
+      const { checkForecast, getCurrentConditions } = require('./tomorrowService');
+      [forecasts, currentConditions] = await Promise.all([
+        checkForecast(parseFloat(zone.center_lat), parseFloat(zone.center_lng)),
+        getCurrentConditions(parseFloat(zone.center_lat), parseFloat(zone.center_lng)),
+      ]);
     } catch (err) {
-      console.error('[Alert] Forecast fetch failed:', err.message);
+      console.error('[Alert] Tomorrow.io fetch failed:', err.message);
     }
   }
 
   // ── 3. Send combined email ────────────────────────────────────────────────
-  const html    = buildZoneReportEmailHtml(user.email, zone.name, recentStorm, forecasts);
+  const html    = buildZoneReportEmailHtml(user.email, zone.name, recentStorm, forecasts, currentConditions);
   const subject = `Zone Activated: ${zone.name} is now monitoring for storms`;
 
   let status = 'sent';
