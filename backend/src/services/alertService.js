@@ -323,15 +323,22 @@ async function processNewZoneAlerts(zone) {
     status = 'failed';
   }
 
-  // ── 4. Log dedup record for the NOAA storm so cron doesn't re-alert ───────
-  if (recentStorm) {
+  // ── 4. Always log the zone activation email (NULL storm_event_id avoids
+  //       the unique index so this always creates a visible Alert Log entry)
+  await pool.query(
+    `INSERT INTO alerts_sent (user_id, storm_event_id, channel, status, message_preview, triggered_by)
+     VALUES ($1, NULL, 'email', $2, $3, 'auto')`,
+    [user.id, status, `Zone activated: ${zone.name}`]
+  );
+
+  // ── 5. Mark the NOAA storm as alerted so the cron doesn't re-send it ─────
+  if (recentStorm && status === 'sent') {
     await pool.query(
       `INSERT INTO alerts_sent (user_id, storm_event_id, channel, status, message_preview, triggered_by)
-       VALUES ($1, $2, 'email', $3, $4, 'auto')
+       VALUES ($1, $2, 'email', 'sent', $3, 'auto')
        ON CONFLICT (user_id, storm_event_id, channel) WHERE triggered_by = 'auto'
-       DO UPDATE SET status = $3
-       WHERE alerts_sent.status = 'failed'`,
-      [user.id, recentStorm.id, status, `Zone report: ${zone.name}`]
+       DO UPDATE SET status = 'sent', sent_at = NOW()`,
+      [user.id, recentStorm.id, `Zone report: ${zone.name}`]
     );
   }
 
