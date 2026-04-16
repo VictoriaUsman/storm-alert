@@ -1,0 +1,150 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  color: #1a1a2e;
+  background: #f4f6fa;
+}
+
+/* ─── Loading Spinner ──────────────────────────────── */
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-size: 16px;
+  color: #666;
+}
+
+/* ─── Layout ───────────────────────────────────────── */
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px 20px;
+}
+
+/* ─── Cards ────────────────────────────────────────── */
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  margin-bottom: 20px;
+}
+
+/* ─── Buttons ──────────────────────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 18px;
+  border-radius: 5px;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  transition: opacity .15s, transform .1s;
+}
+.btn:hover   { opacity: .88; }
+.btn:active  { transform: scale(.97); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+.btn-primary  { background: #16213e; color: #fff; }
+.btn-danger   { background: #c0392b; color: #fff; }
+.btn-outline  { background: transparent; border: 1.5px solid #16213e; color: #16213e; }
+.btn-sm       { padding: 5px 12px; font-size: 13px; }
+.btn-success  { background: #27ae60; color: #fff; }
+
+/* ─── Forms ────────────────────────────────────────── */
+.form-group { margin-bottom: 16px; }
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #555;
+}
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1.5px solid #d0d5dd;
+  border-radius: 5px;
+  font-size: 14px;
+  outline: none;
+  transition: border-color .15s;
+}
+.form-group input:focus,
+.form-group select:focus { border-color: #16213e; }
+
+.error-msg  { color: #c0392b; font-size: 13px; margin-top: 8px; }
+.success-msg { color: #27ae60; font-size: 13px; margin-top: 8px; }
+
+/* ─── Tables ───────────────────────────────────────── */
+.table-wrap { overflow-x: auto; }
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+th {
+  background: #f8f9fb;
+  text-align: left;
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: #888;
+  border-bottom: 2px solid #eee;
+}
+td {
+  padding: 11px 14px;
+  border-bottom: 1px solid #f0f0f0;
+  vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #fafbfc; }
+
+/* ─── Severity Badges ──────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.badge-light    { background: #fff3cd; color: #856404; }
+.badge-moderate { background: #ffe0b2; color: #e65100; }
+.badge-severe   { background: #fde8e8; color: #c0392b; }
+.badge-sent     { background: #d4edda; color: #155724; }
+.badge-failed   { background: #fde8e8; color: #721c24; }
+.badge-manual   { background: #d1ecf1; color: #0c5460; }
+
+/* ─── Tabs ──────────────────────────────────────────── */
+.tabs { display: flex; gap: 0; border-bottom: 2px solid #eee; margin-bottom: 24px; }
+.tab-btn {
+  padding: 10px 20px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #888;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  transition: color .15s, border-color .15s;
+}
+.tab-btn:hover  { color: #16213e; }
+.tab-btn.active { color: #16213e; border-bottom-color: #16213e; }
+
+/* ─── Responsive ────────────────────────────────────── */
+@media (max-width: 640px) {
+  .page { padding: 16px 12px; }
+  .card { padding: 16px; }
+}
