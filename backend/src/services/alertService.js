@@ -147,7 +147,7 @@ async function processStormAlerts(storm) {
     // Skip if auto-alert already sent (enforced by partial unique index too)
     const { rows: existing } = await pool.query(
       `SELECT id FROM alerts_sent
-       WHERE user_id = $1 AND storm_event_id = $2 AND channel = 'email' AND triggered_by = 'auto'`,
+       WHERE user_id = $1 AND storm_event_id = $2 AND channel = 'email' AND triggered_by = 'auto' AND status = 'sent'`,
       [m.id, storm.id]
     );
     if (existing.length) continue;
@@ -232,7 +232,7 @@ async function processNewZoneAlerts(zone) {
   const results = [];
   for (const storm of matching) {
     const { rows: existing } = await pool.query(
-      `SELECT id FROM alerts_sent WHERE user_id = $1 AND storm_event_id = $2 AND channel = 'email'`,
+      `SELECT id FROM alerts_sent WHERE user_id = $1 AND storm_event_id = $2 AND channel = 'email' AND status = 'sent'`,
       [user.id, storm.id]
     );
     if (existing.length) continue;
