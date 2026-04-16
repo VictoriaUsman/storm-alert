@@ -219,12 +219,15 @@ async function processNewZoneAlerts(zone) {
      ORDER BY event_date DESC`
   );
 
-  const matching = storms.filter(s =>
+  const allMatching = storms.filter(s =>
     haversineDistanceMiles(
       parseFloat(s.lat), parseFloat(s.lng),
       parseFloat(zone.center_lat), parseFloat(zone.center_lng)
     ) <= parseFloat(zone.radius_miles)
   );
+
+  // Only alert on the single most recent storm
+  const matching = allMatching.slice(0, 1);
 
   const results = [];
   for (const storm of matching) {
