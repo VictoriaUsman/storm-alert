@@ -31,8 +31,13 @@ function haversineDistanceMiles(lat1, lon1, lat2, lon2) {
 const SEVERITY_COLOR = { light: '#e6a817', moderate: '#d4600a', severe: '#c0392b' };
 
 function stormDetail(storm) {
-  if (storm.event_type === 'hail') return `${storm.hail_size}" hail`;
-  if (storm.event_type === 'wind') return `${storm.wind_speed} mph wind`;
+  if (storm.event_type === 'hail')         return `${storm.hail_size}" hail`;
+  if (storm.event_type === 'wind')         return `${storm.wind_speed} mph wind`;
+  if (storm.event_type === 'thunderstorm') return 'Thunderstorm';
+  if (storm.event_type === 'rain')         return 'Heavy Rain';
+  if (storm.event_type === 'snow')         return 'Heavy Snow';
+  if (storm.event_type === 'ice')          return 'Ice / Freezing Rain';
+  if (storm.event_type === 'tornado')      return 'Tornado';
   return storm.event_type;
 }
 

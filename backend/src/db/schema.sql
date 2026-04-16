@@ -39,7 +39,7 @@ CREATE TABLE coverage_zones (
 CREATE TABLE storm_events (
   id            UUID         PRIMARY KEY DEFAULT gen_random_uuid(),
   event_date    DATE         NOT NULL,
-  event_type    VARCHAR(20)  NOT NULL CHECK (event_type IN ('hail', 'wind', 'tornado')),
+  event_type    VARCHAR(20)  NOT NULL CHECK (event_type IN ('hail', 'wind', 'tornado', 'thunderstorm', 'rain', 'snow', 'ice')),
   severity      VARCHAR(20)  NOT NULL CHECK (severity IN ('light', 'moderate', 'severe')),
   lat           DECIMAL(9,6) NOT NULL,
   lng           DECIMAL(9,6) NOT NULL,
