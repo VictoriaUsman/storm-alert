@@ -8,12 +8,13 @@ let _transporter = null;
 function getTransporter() {
   if (_transporter) return _transporter;
   _transporter = nodemailer.createTransport({
-    host:   process.env.SMTP_HOST,
-    port:   parseInt(process.env.SMTP_PORT) || 587,
-    secure: process.env.SMTP_SECURE === 'true',
+    service: 'gmail',
     auth: {
-      user: process.env.SMTP_USER,
-      pass: process.env.SMTP_PASS,
+      type:         'OAuth2',
+      user:         process.env.GMAIL_USER,
+      clientId:     process.env.GMAIL_CLIENT_ID,
+      clientSecret: process.env.GMAIL_CLIENT_SECRET,
+      refreshToken: process.env.GMAIL_REFRESH_TOKEN,
     },
   });
   return _transporter;
@@ -131,7 +132,7 @@ async function sendEmailAlert(userEmail, storm, zoneName) {
   const subject = `Storm Alert: ${storm.severity.toUpperCase()} ${storm.event_type} near ${loc || 'your area'}`;
 
   await getTransporter().sendMail({
-    from:    process.env.EMAIL_FROM,
+    from:    process.env.EMAIL_FROM || process.env.GMAIL_USER,
     to:      userEmail,
     subject,
     html,
