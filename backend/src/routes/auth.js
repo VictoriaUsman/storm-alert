@@ -1,10 +1,22 @@
-const express = require('express');
-const bcrypt  = require('bcryptjs');
-const jwt     = require('jsonwebtoken');
-const pool    = require('../db');
+const express   = require('express');
+const bcrypt    = require('bcryptjs');
+const jwt       = require('jsonwebtoken');
+const rateLimit = require('express-rate-limit');
+const pool      = require('../db');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
+
+// 10 attempts / 15 min per IP — brute-force protection for login & register
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many attempts, please try again in 15 minutes' },
+});
+
+const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,255}\.[^\s@]{2,}$/;
 
 function signToken(id) {
   return jwt.sign({ id }, process.env.JWT_SECRET, {
@@ -13,12 +25,16 @@ function signToken(id) {
 }
 
 // POST /api/auth/register
-router.post('/register', async (req, res) => {
+router.post('/register', authLimiter, async (req, res) => {
   const { email, password, company_name = '', contact_name = '', phone = '' } = req.body;
   if (!email || !password)
     return res.status(400).json({ error: 'Email and password are required' });
+  if (!EMAIL_RE.test(email))
+    return res.status(400).json({ error: 'Invalid email address' });
   if (password.length < 8)
     return res.status(400).json({ error: 'Password must be at least 8 characters' });
+  if (password.length > 128)
+    return res.status(400).json({ error: 'Password must be at most 128 characters' });
 
   try {
     const existing = await pool.query('SELECT id FROM users WHERE email = $1', [email.toLowerCase()]);
@@ -44,7 +60,7 @@ router.post('/register', async (req, res) => {
 });
 
 // POST /api/auth/login
-router.post('/login', async (req, res) => {
+router.post('/login', authLimiter, async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password)
     return res.status(400).json({ error: 'Email and password are required' });

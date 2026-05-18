@@ -1,10 +1,20 @@
-const express = require('express');
-const pool    = require('../db');
-const { authenticate }   = require('../middleware/auth');
+const express   = require('express');
+const rateLimit = require('express-rate-limit');
+const pool      = require('../db');
+const { authenticate }       = require('../middleware/auth');
 const { geocodeLocation }    = require('../services/geocodeService');
 const { processNewZoneAlerts } = require('../services/alertService');
 
 const router = express.Router();
+
+// 20 zone creations / hour per IP — prevents Nominatim geocoding abuse
+const createZoneLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 20,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many coverage zones created, please try again later' },
+});
 
 // GET /api/coverage-zones
 router.get('/', authenticate, async (req, res) => {
@@ -16,7 +26,7 @@ router.get('/', authenticate, async (req, res) => {
 });
 
 // POST /api/coverage-zones
-router.post('/', authenticate, async (req, res) => {
+router.post('/', authenticate, createZoneLimiter, async (req, res) => {
   const { name, input_value, radius_miles = 25 } = req.body;
 
   if (!name?.trim() || !input_value?.trim())

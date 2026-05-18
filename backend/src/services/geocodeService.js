@@ -1,9 +1,11 @@
-const axios = require('axios');
+const { createHttpClient } = require('../utils/httpClient');
+
+const http = createHttpClient({ retries: 2 }); // conservative: Nominatim rate-limits aggressively
 
 // Uses OpenStreetMap Nominatim — free, no API key required.
 // Rate limit: 1 req/sec; perfectly fine for MVP usage.
 async function geocodeLocation(query) {
-  const response = await axios.get('https://nominatim.openstreetmap.org/search', {
+  const response = await http.get('https://nominatim.openstreetmap.org/search', {
     params: { q: query, format: 'json', limit: 1, countrycodes: 'us' },
     headers: { 'User-Agent': `StormAlertMVP/1.0 (${process.env.CONTACT_EMAIL || 'contact@example.com'})` },
     timeout: 8000,

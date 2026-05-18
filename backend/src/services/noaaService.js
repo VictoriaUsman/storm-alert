@@ -9,8 +9,10 @@
  *   - Time     : UTC HHMM
  *   - F_Scale  : hail size in inches (hail) OR wind speed in mph (wind)
  */
-const axios = require('axios');
 const { parse } = require('csv-parse/sync');
+const { createHttpClient } = require('../utils/httpClient');
+
+const http = createHttpClient();
 
 function toSPCDateStr(date) {
   const yy = String(date.getUTCFullYear()).slice(-2);
@@ -33,7 +35,7 @@ function classifyWind(mph) {
 
 async function fetchCSV(url) {
   try {
-    const res = await axios.get(url, {
+    const res = await http.get(url, {
       timeout: 12000,
       headers: { 'User-Agent': 'StormAlertMVP/1.0' },
       responseType: 'text',

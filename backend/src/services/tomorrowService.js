@@ -1,4 +1,6 @@
-const axios = require('axios');
+const { createHttpClient } = require('../utils/httpClient');
+
+const http = createHttpClient();
 
 const BASE = 'https://api.tomorrow.io/v4';
 
@@ -55,7 +57,7 @@ const WEATHER_LABELS = {
 // ─── Current conditions ───────────────────────────────────────────────────────
 
 async function getCurrentConditions(lat, lng) {
-  const res = await axios.get(`${BASE}/weather/realtime`, {
+  const res = await http.get(`${BASE}/weather/realtime`, {
     params: {
       location: `${lat},${lng}`,
       fields:   'temperature,humidity,windSpeed,windGust,precipitationIntensity,weatherCode,hailProbability',
@@ -88,7 +90,7 @@ async function checkForecast(lat, lng) {
     iceAccum:      0.1,  // inches over next 24h
   };
 
-  const res = await axios.get(`${BASE}/timelines`, {
+  const res = await http.get(`${BASE}/timelines`, {
     params: {
       location:  `${lat},${lng}`,
       fields:    'hailProbability,windGust,precipitationIntensity,weatherCode,snowAccumulation,iceAccumulation',
